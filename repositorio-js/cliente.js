@@ -5,37 +5,106 @@
  * Matrícula: 01609346
  *
  * Descrição:
- * Este arquivo JavaScript é responsável por armazenar e consultar por todas as funções pelo banco de dados.
+ * Este arquivo JavaScript é responsável por consultar todas as funções pelo banco de dados.
  *
  * Este script é parte o curso de ADS.
  */
 
 
 
+// READ //
 
+if (req.method === "GET") {
+    const id = req.query.id;
+    console.log("", id);
 
+    if (id === undefined) {
+      const clientes = await db.all("SELECT * from clientes");
 
-/* -- Armazenamento e consultas 
-(tabela clientes) --
+      res.status(200).json(clientes);
+    } else {
+      const cliente = await db.get("SELECT * from clientes WHERE id = ?", [id]);
+      res.status(200).json(cliente);
+    }
+  }
 
-INSERT INTO clientes (nome, endereço, telefone, email)
-VALUES ('Tony Yuri', 'Rua Vasconcelos, Joaquim 33', '5328834359', 'tony@outlook.com.br');
+// CREATE //
 
-UPDATE clientes SET email = 'antony@gmail.com.br' where id = 1;
+if (req.method === "POST") {
+    const new_cliente = req.body;
 
-SELECT * from clientes WHERE id = 1;
+    console.log("====================================");
+    console.log(new_cliente.nome, new_cliente.endereço, new_cliente.telefone, new_cliente.email);
+    console.log("====================================");
 
-DELETE from clientes WHERE id = 1;
+    if (new_cliente.nome === undefined || new_cliente.nome === "") {
+      res.status(402).json({message: "nome é obrigatorio!"});
+    }
 
--- Armazenamento e consultas (Tabela cliente_serviço) --
+    if (new_cliente.endereço=== undefined || new_cliente.endereço === "") {
+        res.status(402).json({message: "endereço é obrigatorio!"});
+    }
+    
+    if (new_cliente.telefone === undefined || new_cliente.telefone === "") {
+        res.status(402).json({message: "telefone é obrigatorio!"});
+    }
 
-INSERT INTO cliente_servico (id, cliente_associado, data_ordem, desc_serviço, custo_estimado, status_servico) VALUES (UUID(), cliente_associado, 'data_ordem', 'desc_serviço', 'custo_estimado', status_serviço, custo_final);
+    if (new_cliente.email === undefined || new_cliente.email === "") {
+      res.status(402).json({message: "email é obrigatorio!"});
+    }
 
-UPDATE cliente_servico SET status_servico = 'Em andamento', 'Concluído', 'Cancelado' where id = 'UUID() da ordem';
-UPDATE custo_final SET custo_final = x where id = cliente_associado;
+    const createUser = await db.prepare(
+        "INSERT INTO clientes (nome, endereço, telefone, email) VALUES (?, ?, ?, ?);"
+    );
 
-SELECT * from cliente_servico;
+    const runCreat = await createUser.run(new_cliente.nome, new_cliente.endereço, new_cliente.telefone, new_cliente.email);
 
-DELETE from cliente_servico WHERE id = "UUID() da ordem";
+    res.status(201).json({});
+  }
 
-*/
+// UPDATE // 
+
+if (req.method === "PUT") {
+    const update_cliente = req.body;
+
+    const valid_cliente = await db.get("SELECT * from clientes WHERE id = ?", [
+      update_cliente.id,
+    ]);
+    if (valid_cliente === undefined) {
+      res.status(404).json({});
+    }
+
+    const updateCliente = await db.prepare(
+      "UPDATE clientes SET nome = ?, endereço = ?, telefone = ?, email = ? WHERE id = ?"
+    );
+    const runCreat = await updateCliente.run(
+      update_cliente.nome,
+      update_cliente.endereço,
+      update_cliente.telefone,
+      update_cliente.email,
+      update_cliente.id
+    );
+
+    res.status(200).json({});
+  }
+
+  // DELETE //
+
+  if (req.method === "DELETE") {
+    const ID = req.body.id;
+
+    const valid_cliente = await db.get("SELECT * from clientes WHERE id = ?", [
+      ID,
+    ]);
+    if (valid_cliente === undefined) {
+      res.status(404).json({});
+    }
+
+    const deleteCliente = await db.prepare(
+      "DELETE FROM Clientes WHERE id = ?;"
+    );
+
+    const delete_cliente = await deleteCliente.run(ID);
+
+    res.status(201).json({});
+  }
